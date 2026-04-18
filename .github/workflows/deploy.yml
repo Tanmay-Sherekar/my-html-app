@@ -2,7 +2,7 @@ name: CI-CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -12,22 +12,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/html-app:latest .
+        run: docker build -t ghcr.io/${{ github.repository }}/html-app:latest .
 
       - name: Push Docker Image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/html-app:latest
+        run: docker push ghcr.io/${{ github.repository }}/html-app:latest
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    continue-on-error: true   # prevents badge from turning red if deploy fails
+    continue-on-error: true
 
     steps:
       - name: Deploy to EC2 via SSH
@@ -37,7 +34,8 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/html-app:latest || true
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker pull ghcr.io/${{ github.repository }}/html-app:latest || true
             docker stop html-app || true
             docker rm html-app || true
-            docker run -d -p 80:80 --name html-app ${{ secrets.DOCKER_USERNAME }}/html-app:latest || true
+            docker run -d -p 80:80 --name html-app ghcr.io/${{ github.repository }}/html-app:latest || true
