@@ -19,10 +19,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/html-app .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/html-app:latest .
 
       - name: Push Docker Image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/html-app
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/html-app:latest
 
   deploy:
     needs: build
@@ -36,7 +36,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/html-app
+            docker pull ${{ secrets.DOCKER_USERNAME }}/html-app:latest
             docker stop html-app || true
             docker rm html-app || true
-            docker run -d -p 80:80 --name html-app ${{ secrets.DOCKER_USERNAME }}/html-app
+            docker run -d -p 80:80 --name html-app ${{ secrets.DOCKER_USERNAME }}/html-app:latest
