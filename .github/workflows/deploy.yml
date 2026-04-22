@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -24,18 +24,17 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Deploy to EC2 via SSH
-        - uses: actions/checkout@v4
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-            docker pull ghcr.io/${{ github.repository }}/html-app:latest || true
+            docker pull ghcr.io/${{ github.repository }}/html-app:latest
             docker stop html-app || true
             docker rm html-app || true
-            docker run -d -p 80:80 --name html-app ghcr.io/${{ github.repository }}/html-app:latest || true
+            docker run -d -p 80:80 --name html-app ghcr.io/${{ github.repository }}/html-app:latest
